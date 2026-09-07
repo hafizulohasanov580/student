@@ -5,27 +5,73 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Панель дежурного бота</title>
 <style>
-  :root { color-scheme: light dark; }
+  :root {
+    color-scheme: light dark;
+    --bg: #f4f5f7;
+    --bg-elevated: #ffffff;
+    --bg-input: #ffffff;
+    --btn-bg: #eef0f3;
+    --btn-bg-active: #e1e4e9;
+    --text: #16181d;
+    --text-muted: #767c88;
+    --border: #e6e8ec;
+    --primary: #2d6cdf;
+    --primary-fg: #ffffff;
+    --danger: #e0384b;
+    --danger-bg: #fdecee;
+    --danger-fg: #ffffff;
+    --warn: #b8720a;
+    --warn-bg: #fdf2df;
+    --success: #1e9e5a;
+    --shadow: 0 1px 2px rgba(20,20,30,.06), 0 4px 14px rgba(20,20,30,.06);
+    --radius: 16px;
+    --radius-sm: 11px;
+    --header-grad: linear-gradient(135deg, #2d6cdf, #4a7ff0);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101216;
+      --bg-elevated: #1a1d23;
+      --bg-input: #1f232a;
+      --btn-bg: #23262e;
+      --btn-bg-active: #2c303a;
+      --text: #eef0f3;
+      --text-muted: #9399a6;
+      --border: #2a2e37;
+      --primary: #5c92f5;
+      --primary-fg: #0d1220;
+      --danger: #f0596a;
+      --danger-bg: #341418;
+      --danger-fg: #150507;
+      --warn: #e0a338;
+      --warn-bg: #33280f;
+      --success: #3fbf7f;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.35);
+      --header-grad: linear-gradient(135deg, #1f4fb0, #2d6cdf);
+    }
+  }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; }
   body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #f5f6f8;
-    color: #1a1a1a;
+    background: var(--bg);
+    color: var(--text);
     padding-bottom: env(safe-area-inset-bottom);
     -webkit-font-smoothing: antialiased;
   }
   header {
-    background: #2d6cdf;
+    background: var(--header-grad);
     color: #fff;
-    padding: calc(14px + env(safe-area-inset-top)) 18px 14px;
+    padding: calc(16px + env(safe-area-inset-top)) 18px 16px;
     position: sticky;
     top: 0;
     z-index: 5;
+    box-shadow: 0 2px 10px rgba(0,0,0,.12);
   }
-  header h1 { margin: 0; font-size: 17px; font-weight: 600; }
-  main { max-width: 720px; margin: 0 auto; padding: 14px 12px 32px; }
+  header h1 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: .1px; }
+  header .sub { font-size: 12.5px; opacity: .85; margin-top: 2px; }
+  main { max-width: 720px; margin: 0 auto; padding: 14px 12px 40px; }
   .tabs {
     display: flex;
     gap: 6px;
@@ -33,115 +79,283 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 2px;
+    scrollbar-width: none;
   }
+  .tabs::-webkit-scrollbar { display: none; }
   .tab {
     flex: 0 0 auto;
-    padding: 9px 14px;
+    padding: 9px 15px;
     border-radius: 20px;
-    background: #e4e7ec;
+    background: var(--btn-bg);
+    color: var(--text-muted);
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13.5px;
+    font-weight: 600;
     user-select: none;
     white-space: nowrap;
+    transition: background .15s, color .15s;
   }
-  .tab.active { background: #2d6cdf; color: #fff; }
-  .card { background: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-  .row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; gap: 10px; }
+  .tab.active { background: var(--primary); color: var(--primary-fg); }
+  .card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 15px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+  .card-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+  .row { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--border); gap: 10px; }
   .row:last-child { border-bottom: none; }
-  .name { font-size: 14px; line-height: 1.35; }
-  .today { color: #2d6cdf; font-weight: 600; }
-  .muted { color: #888; font-size: 12px; }
-  button {
-    border: none;
-    border-radius: 8px;
-    padding: 9px 12px;
-    font-size: 14px;
-    cursor: pointer;
-    background: #e4e7ec;
-    min-height: 36px;
-    min-width: 36px;
+  .name { font-size: 14px; line-height: 1.4; font-weight: 500; }
+  .today { color: var(--primary); font-weight: 700; }
+  .today-badge {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--primary-fg);
+    background: var(--primary);
+    padding: 1px 7px;
+    border-radius: 20px;
+    margin-left: 6px;
+    vertical-align: middle;
   }
-  button:active { background: #d7dbe2; }
-  button.primary { background: #2d6cdf; color: #fff; }
-  button.danger { background: #e04b4b; color: #fff; }
-  .btns { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
-  textarea {
-    width: 100%;
-    min-height: 100px;
+  .muted { color: var(--text-muted); font-size: 12.5px; margin-top: 2px; }
+  button {
+    border: 1px solid var(--border);
     border-radius: 10px;
-    border: 1px solid #ccc;
-    padding: 12px;
+    padding: 9px 13px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--btn-bg);
+    color: var(--text);
+    min-height: 38px;
+    min-width: 38px;
+    transition: background .12s, transform .06s;
+  }
+  button:active { background: var(--btn-bg-active); transform: scale(.97); }
+  button.primary { background: var(--primary); color: var(--primary-fg); border-color: var(--primary); }
+  button.danger { background: var(--danger); color: var(--danger-fg); border-color: var(--danger); }
+  button.ghost { background: transparent; }
+  button:disabled { opacity: .45; cursor: default; transform: none; }
+  .btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .empty { color: var(--text-muted); font-size: 13.5px; padding: 6px 2px; }
+  textarea, input[type="text"] {
+    width: 100%;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-input);
+    color: var(--text);
+    padding: 11px 12px;
     font-family: inherit;
     font-size: 16px;
-    resize: vertical;
   }
-  .log-item { font-size: 13px; padding: 8px 0; border-bottom: 1px solid #eee; }
+  textarea { min-height: 96px; resize: vertical; }
+  .log-item { font-size: 13px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .log-item:last-child { border-bottom: none; }
+  .log-kind {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+    padding: 2px 7px;
+    border-radius: 6px;
+    margin-right: 6px;
+  }
   .hidden { display: none; }
-  .status { font-size: 13px; margin-top: 8px; }
-  .error-banner {
-    background: #fdeaea;
-    color: #a12727;
-    border-radius: 10px;
-    padding: 12px 14px;
-    font-size: 14px;
-    margin-bottom: 12px;
-  }
   [hidden] { display: none !important; }
+  .status { font-size: 13px; margin-top: 8px; min-height: 16px; }
+  .status.ok { color: var(--success); }
+  .status.err { color: var(--danger); }
+  .danger-card { border-color: color-mix(in srgb, var(--danger) 35%, var(--border)); }
+  .warn-card { border-color: color-mix(in srgb, var(--warn) 35%, var(--border)); }
+  .info-box {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 12.5px;
+    line-height: 1.45;
+    margin-bottom: 10px;
+  }
+  .center-card {
+    text-align: center;
+    padding: 34px 22px;
+  }
+  .center-card .icon { font-size: 34px; margin-bottom: 10px; }
+  .center-card h2 { font-size: 16px; margin: 0 0 8px; }
+  .center-card p { font-size: 13.5px; color: var(--text-muted); line-height: 1.5; margin: 0 0 4px; }
+  .spinner {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 3px solid var(--border);
+    border-top-color: var(--primary);
+    animation: spin .7s linear infinite;
+    margin: 26px auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,10,14,.5);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    z-index: 100;
+    animation: fadeIn .12s ease-out;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    width: 100%; max-width: 380px;
+    box-shadow: var(--shadow);
+    animation: modalIn .14s ease-out;
+  }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(6px) scale(.98); } to { opacity: 1; transform: none; } }
+  .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .modal-msg { font-size: 13.5px; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px; }
+  .modal input { margin-bottom: 14px; }
+  .modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+  .modal-btns button { min-width: 92px; }
   @media (max-width: 420px) {
     .row { flex-direction: column; align-items: stretch; }
     .btns { justify-content: flex-start; }
+    .modal-btns { flex-direction: column-reverse; }
+    .modal-btns button { width: 100%; }
   }
 </style>
 </head>
 <body>
-<header><h1>Панель бота-дежурного</h1></header>
+<header>
+  <h1>Панель бота-дежурного</h1>
+  <div class="sub">1 70.02.01 ПА</div>
+</header>
 <main>
   <div id="authError"></div>
-  <div class="tabs">
-    <div class="tab active" data-tab="queue">Очередь</div>
-    <div class="tab" data-tab="regs">Регистрации</div>
-    <div class="tab" data-tab="announce">Объявление</div>
-    <div class="tab" data-tab="log">Журнал</div>
-    <div class="tab" data-tab="settings">Настройки</div>
-  </div>
-
-  <div id="tab-queue" class="tab-content"></div>
-  <div id="tab-regs" class="tab-content hidden"></div>
-  <div id="tab-announce" class="tab-content hidden">
-    <div class="card">
-      <textarea id="announceText" placeholder="Текст объявления в группу..."></textarea>
-      <div class="btns" style="margin-top:8px">
-        <button class="primary" id="sendAnnounce">Отправить в группу</button>
-      </div>
-      <div class="status" id="announceStatus"></div>
+  <div id="appRoot" hidden>
+    <div class="tabs">
+      <div class="tab active" data-tab="queue">📋 Очередь</div>
+      <div class="tab" data-tab="regs">👤 Регистрации</div>
+      <div class="tab" data-tab="announce">📢 Объявление</div>
+      <div class="tab" data-tab="log">🗒 Журнал</div>
+      <div class="tab" data-tab="settings">⚙️ Настройки</div>
     </div>
+
+    <div id="tab-queue" class="tab-content"></div>
+    <div id="tab-regs" class="tab-content hidden"></div>
+    <div id="tab-announce" class="tab-content hidden">
+      <div class="card">
+        <div class="card-title">Текст объявления</div>
+        <textarea id="announceText" placeholder="Например: завтра пары начнутся на 20 минут позже..."></textarea>
+        <div class="btns" style="margin-top:10px">
+          <button class="primary" id="sendAnnounce">Отправить в группу</button>
+        </div>
+        <div class="status" id="announceStatus"></div>
+      </div>
+    </div>
+    <div id="tab-log" class="tab-content hidden"></div>
+    <div id="tab-settings" class="tab-content hidden"></div>
   </div>
-  <div id="tab-log" class="tab-content hidden"></div>
-  <div id="tab-settings" class="tab-content hidden"></div>
 </main>
 
 <script>
-const params = new URLSearchParams(location.search);
-const TOKEN = params.get("token") || params.get("panel") || "";
-const API_URL = "https://gbqllmzergnmpnceaynw.supabase.co/functions/v1/duty-bot?api=1";
+var params = new URLSearchParams(location.search);
+var TOKEN = params.get("token") || params.get("panel") || "";
+var API_URL = "https://gbqllmzergnmpnceaynw.supabase.co/functions/v1/duty-bot?api=1";
 
-async function api(action, payload) {
-  const res = await fetch(API_URL, {
+function api(action, payload) {
+  return fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token: TOKEN, action, payload }),
-  });
-  return res.json();
+    body: JSON.stringify({ token: TOKEN, action: action, payload: payload }),
+  }).then(function (res) { return res.json(); });
 }
 
 function esc(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-document.querySelectorAll(".tab").forEach((el) => {
-  el.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
-    document.querySelectorAll(".tab-content").forEach((t) => t.classList.add("hidden"));
+// --------------------------------------------------------------------------
+// Модальные окна (вместо стандартных confirm()/prompt() браузера — не только
+// выглядят приличнее, но и не дают случайно "проскочить" подтверждение одним
+// нажатием Enter, как иногда бывает со встроенными диалогами).
+// --------------------------------------------------------------------------
+
+function showModal(innerHtml, wire) {
+  return new Promise(function (resolve) {
+    var overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.innerHTML = '<div class="modal">' + innerHtml + '</div>';
+    document.body.appendChild(overlay);
+    var modal = overlay.querySelector(".modal");
+    modal.addEventListener("click", function (e) { e.stopPropagation(); });
+    overlay.addEventListener("click", function () { finish(null); });
+    function finish(result) {
+      overlay.remove();
+      resolve(result);
+    }
+    wire(modal, finish);
+  });
+}
+
+function showConfirm(opts) {
+  var danger = opts.danger !== false;
+  var requireWord = opts.requireWord || null;
+  var html =
+    '<div class="modal-title">' + esc(opts.title) + '</div>' +
+    '<div class="modal-msg">' + esc(opts.message) + '</div>' +
+    (requireWord ? '<input type="text" id="mConfirmInput" autocomplete="off" placeholder="Введите: ' + esc(requireWord) + '">' : '') +
+    '<div class="modal-btns">' +
+      '<button class="ghost" id="mCancel">' + esc(opts.cancelText || "Отмена") + '</button>' +
+      '<button class="' + (danger ? "danger" : "primary") + '" id="mOk">' + esc(opts.confirmText || "Подтвердить") + '</button>' +
+    '</div>';
+  return showModal(html, function (modal, finish) {
+    var okBtn = modal.querySelector("#mOk");
+    var input = modal.querySelector("#mConfirmInput");
+    if (requireWord) {
+      okBtn.disabled = true;
+      input.addEventListener("input", function () {
+        okBtn.disabled = input.value.trim() !== requireWord;
+      });
+      setTimeout(function () { input.focus(); }, 30);
+    }
+    modal.querySelector("#mCancel").addEventListener("click", function () { finish(false); });
+    okBtn.addEventListener("click", function () { finish(true); });
+  });
+}
+
+function showPrompt(opts) {
+  var multiline = !!opts.multiline;
+  var fieldHtml = multiline
+    ? '<textarea id="mPromptInput" placeholder="' + esc(opts.placeholder || "") + '">' + esc(opts.initialValue || "") + '</textarea>'
+    : '<input type="text" id="mPromptInput" autocomplete="off" placeholder="' + esc(opts.placeholder || "") + '" value="' + esc(opts.initialValue || "") + '">';
+  var html =
+    '<div class="modal-title">' + esc(opts.title) + '</div>' +
+    (opts.message ? '<div class="modal-msg">' + esc(opts.message) + '</div>' : '') +
+    fieldHtml +
+    '<div class="modal-btns">' +
+      '<button class="ghost" id="mCancel">Отмена</button>' +
+      '<button class="primary" id="mOk">' + esc(opts.confirmText || "Сохранить") + '</button>' +
+    '</div>';
+  return showModal(html, function (modal, finish) {
+    var input = modal.querySelector("#mPromptInput");
+    setTimeout(function () { input.focus(); if (!multiline) input.select(); }, 30);
+    modal.querySelector("#mCancel").addEventListener("click", function () { finish(null); });
+    modal.querySelector("#mOk").addEventListener("click", function () { finish(input.value); });
+  });
+}
+
+// --------------------------------------------------------------------------
+
+document.querySelectorAll(".tab").forEach(function (el) {
+  el.addEventListener("click", function () {
+    document.querySelectorAll(".tab").forEach(function (t) { t.classList.remove("active"); });
+    document.querySelectorAll(".tab-content").forEach(function (t) { t.classList.add("hidden"); });
     el.classList.add("active");
     document.getElementById("tab-" + el.dataset.tab).classList.remove("hidden");
     if (el.dataset.tab === "queue" || el.dataset.tab === "regs") loadData();
@@ -150,75 +364,81 @@ document.querySelectorAll(".tab").forEach((el) => {
   });
 });
 
-const DAY_NAMES = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+var DAY_NAMES = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+var cache = null;
 
-let cache = null;
-
-async function loadData() {
-  const data = await api("get_data", {});
-  if (data.error) { alert(data.error); return; }
-  cache = data;
-  renderQueue();
-  renderRegs();
+function loadData() {
+  return api("get_data", {}).then(function (data) {
+    if (data.error) { alert(data.error); return; }
+    cache = data;
+    renderQueue();
+    renderRegs();
+  });
 }
 
 function regFor(studentId) {
-  return cache.registrations.find((r) => r.student_id === studentId);
+  return cache.registrations.find(function (r) { return r.student_id === studentId; });
 }
 
 function renderQueue() {
-  const el = document.getElementById("tab-queue");
-  const total = cache.students.length;
-  const registered = cache.registrations.length;
+  var el = document.getElementById("tab-queue");
+  var total = cache.students.length;
+  var registered = cache.registrations.length;
 
-  let html = '<div class="card">' +
-    '<div class="muted" style="margin-bottom:8px">Всего: ' + total + ' · зарегистрировано: ' + registered + ' · без регистрации: ' + (total - registered) + '</div>' +
+  var html = '<div class="card">' +
+    '<div class="muted" style="margin-bottom:10px">Всего: ' + total + ' · зарегистрировано: ' + registered + ' · без регистрации: ' + (total - registered) + '</div>' +
     '<div class="btns" style="justify-content:flex-start">' +
       '<button class="primary" id="addStudentBtn">+ Добавить</button>' +
-      '<button id="exportCsvBtn">Экспорт CSV</button>' +
+      '<button class="ghost" id="exportCsvBtn">Экспорт CSV</button>' +
     '</div>' +
   '</div>';
 
-  html += '<div class="card">';
-  cache.students.forEach((s, i) => {
-    const isToday = s.id === cache.todayId;
-    const reg = regFor(s.id);
-    html += '<div class="row">' +
-      '<div>' +
-        '<div class="name' + (isToday ? ' today' : '') + '">' + (i + 1) + '. ' + esc(s.full_name) + (isToday ? ' — сегодня' : '') + '</div>' +
-        '<div class="muted">' + (reg ? (reg.username ? '@' + esc(reg.username) : esc(reg.first_name || 'без ника')) : 'не зарегистрирован') + '</div>' +
-      '</div>' +
-      '<div class="btns">' +
-        '<button data-move="up" data-id="' + s.id + '">↑</button>' +
-        '<button data-move="down" data-id="' + s.id + '">↓</button>' +
-        '<button data-setduty="' + s.id + '">Назначить</button>' +
-        '<button data-rename="' + s.id + '">✎</button>' +
-        '<button class="danger" data-delstudent="' + s.id + '">✕</button>' +
-      '</div>' +
-    '</div>';
-  });
-  html += '</div>';
+  if (!total) {
+    html += '<div class="card"><div class="empty">Список пуст — добавьте первого студента кнопкой выше.</div></div>';
+  } else {
+    html += '<div class="card">';
+    cache.students.forEach(function (s, i) {
+      var isToday = s.id === cache.todayId;
+      var reg = regFor(s.id);
+      html += '<div class="row">' +
+        '<div>' +
+          '<div class="name' + (isToday ? ' today' : '') + '">' + (i + 1) + '. ' + esc(s.full_name) + (isToday ? '<span class="today-badge">сегодня</span>' : '') + '</div>' +
+          '<div class="muted">' + (reg ? (reg.username ? '@' + esc(reg.username) : esc(reg.first_name || 'без ника')) : 'не зарегистрирован') + '</div>' +
+        '</div>' +
+        '<div class="btns">' +
+          '<button class="ghost" data-move="up" data-id="' + s.id + '">↑</button>' +
+          '<button class="ghost" data-move="down" data-id="' + s.id + '">↓</button>' +
+          '<button data-setduty="' + s.id + '">Назначить</button>' +
+          '<button class="ghost" data-rename="' + s.id + '">✎</button>' +
+          '<button class="danger" data-delstudent="' + s.id + '">✕</button>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+  }
   el.innerHTML = html;
 
-  document.getElementById("addStudentBtn").addEventListener("click", async () => {
-    const name = prompt("ФИО нового студента:");
-    if (!name || !name.trim()) return;
-    const r = await api("add_student", { full_name: name.trim() });
-    if (r.error) { alert(r.error); return; }
-    loadData();
+  document.getElementById("addStudentBtn").addEventListener("click", function () {
+    showPrompt({ title: "Новый студент", placeholder: "ФИО" }).then(function (name) {
+      if (!name || !name.trim()) return;
+      api("add_student", { full_name: name.trim() }).then(function (r) {
+        if (r.error) { alert(r.error); return; }
+        loadData();
+      });
+    });
   });
 
-  document.getElementById("exportCsvBtn").addEventListener("click", () => {
-    const rows = [["#", "ФИО", "Telegram"]];
-    cache.students.forEach((s, i) => {
-      const reg = regFor(s.id);
-      const who = reg ? (reg.username ? "@" + reg.username : (reg.first_name || String(reg.telegram_user_id))) : "не зарегистрирован";
+  document.getElementById("exportCsvBtn").addEventListener("click", function () {
+    var rows = [["#", "ФИО", "Telegram"]];
+    cache.students.forEach(function (s, i) {
+      var reg = regFor(s.id);
+      var who = reg ? (reg.username ? "@" + reg.username : (reg.first_name || String(reg.telegram_user_id))) : "не зарегистрирован";
       rows.push([String(i + 1), s.full_name, who]);
     });
-    const csv = rows.map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(",")).join("\n");
-    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    var csv = rows.map(function (r) { return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(","); }).join("\n");
+    var blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
     a.href = url;
     a.download = "duty_queue.csv";
     document.body.appendChild(a);
@@ -227,149 +447,229 @@ function renderQueue() {
     URL.revokeObjectURL(url);
   });
 
-  el.querySelectorAll("[data-move]").forEach((b) => b.addEventListener("click", async () => {
-    await api("move", { id: Number(b.dataset.id), direction: b.dataset.move });
-    loadData();
-  }));
-  el.querySelectorAll("[data-setduty]").forEach((b) => b.addEventListener("click", async () => {
-    if (!confirm("Назначить этого человека дежурным сегодня?")) return;
-    await api("set_duty", { studentId: Number(b.dataset.setduty) });
-    loadData();
-  }));
-  el.querySelectorAll("[data-rename]").forEach((b) => b.addEventListener("click", async () => {
-    const student = cache.students.find((s) => s.id === Number(b.dataset.rename));
-    const name = prompt("Новое ФИО:", student.full_name);
-    if (!name) return;
-    await api("rename", { id: student.id, full_name: name });
-    loadData();
-  }));
-  el.querySelectorAll("[data-delstudent]").forEach((b) => b.addEventListener("click", async () => {
-    const student = cache.students.find((s) => s.id === Number(b.dataset.delstudent));
-    if (!confirm('Удалить "' + student.full_name + '" из очереди насовсем? Это также снимет его регистрацию.')) return;
-    const r = await api("delete_student", { id: student.id });
-    if (r.error) { alert(r.error); return; }
-    loadData();
-  }));
+  el.querySelectorAll("[data-move]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      api("move", { id: Number(b.dataset.id), direction: b.dataset.move }).then(loadData);
+    });
+  });
+  el.querySelectorAll("[data-setduty]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var student = cache.students.find(function (s) { return s.id === Number(b.dataset.setduty); });
+      showConfirm({
+        title: "Назначить дежурным",
+        message: 'Назначить «' + student.full_name + '» дежурным сегодня? Дальше очередь пойдёт по списку после этого человека.',
+        confirmText: "Назначить",
+        danger: false,
+      }).then(function (ok) {
+        if (!ok) return;
+        api("set_duty", { studentId: Number(b.dataset.setduty) }).then(loadData);
+      });
+    });
+  });
+  el.querySelectorAll("[data-rename]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var student = cache.students.find(function (s) { return s.id === Number(b.dataset.rename); });
+      showPrompt({ title: "Изменить ФИО", initialValue: student.full_name }).then(function (name) {
+        if (!name || !name.trim()) return;
+        api("rename", { id: student.id, full_name: name.trim() }).then(loadData);
+      });
+    });
+  });
+  el.querySelectorAll("[data-delstudent]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var student = cache.students.find(function (s) { return s.id === Number(b.dataset.delstudent); });
+      showConfirm({
+        title: "Удалить студента",
+        message: 'Удалить «' + student.full_name + '» из очереди насовсем? Это также снимет его регистрацию. Отменить это действие нельзя.',
+        confirmText: "Удалить",
+        danger: true,
+      }).then(function (ok) {
+        if (!ok) return;
+        api("delete_student", { id: student.id }).then(function (r) {
+          if (r.error) { alert(r.error); return; }
+          loadData();
+        });
+      });
+    });
+  });
 }
 
 function renderRegs() {
-  const el = document.getElementById("tab-regs");
-  const regs = cache.registrations;
-  let html = '<div class="card">';
-  if (!regs.length) html += '<div class="muted">Пока никто не зарегистрировался.</div>';
-  regs.forEach((r) => {
-    const student = cache.students.find((s) => s.id === r.student_id);
-    html += '<div class="row">' +
-      '<div>' +
-        '<div class="name">' + esc(student ? student.full_name : "?") + '</div>' +
-        '<div class="muted">' + (r.username ? '@' + esc(r.username) : esc(r.first_name || String(r.telegram_user_id))) + '</div>' +
-      '</div>' +
-      '<div class="btns">' +
-        '<button data-dm="' + r.telegram_user_id + '">Написать</button>' +
-        '<button class="danger" data-unreg="' + r.telegram_user_id + '">Отвязать</button>' +
-      '</div>' +
-    '</div>';
-  });
+  var el = document.getElementById("tab-regs");
+  var regs = cache.registrations;
+  var html = '<div class="card">';
+  if (!regs.length) {
+    html += '<div class="empty">Пока никто не зарегистрировался.</div>';
+  } else {
+    regs.forEach(function (r) {
+      var student = cache.students.find(function (s) { return s.id === r.student_id; });
+      html += '<div class="row">' +
+        '<div>' +
+          '<div class="name">' + esc(student ? student.full_name : "?") + '</div>' +
+          '<div class="muted">' + (r.username ? '@' + esc(r.username) : esc(r.first_name || String(r.telegram_user_id))) + '</div>' +
+        '</div>' +
+        '<div class="btns">' +
+          '<button class="ghost" data-dm="' + r.telegram_user_id + '">Написать</button>' +
+          '<button class="danger" data-unreg="' + r.telegram_user_id + '">Отвязать</button>' +
+        '</div>' +
+      '</div>';
+    });
+  }
   html += '</div>';
   el.innerHTML = html;
 
-  el.querySelectorAll("[data-unreg]").forEach((b) => b.addEventListener("click", async () => {
-    if (!confirm("Отвязать регистрацию этого человека?")) return;
-    await api("unregister", { telegramUserId: Number(b.dataset.unreg) });
-    loadData();
-  }));
-  el.querySelectorAll("[data-dm]").forEach((b) => b.addEventListener("click", async () => {
-    const text = prompt("Личное сообщение этому человеку:");
-    if (!text || !text.trim()) return;
-    const r = await api("dm_student", { telegramUserId: Number(b.dataset.dm), text: text.trim() });
-    alert(r.ok ? "Отправлено." : "Ошибка: " + (r.error || "не удалось отправить"));
-  }));
-}
-
-async function loadSettings() {
-  const el = document.getElementById("tab-settings");
-  const r = await api("get_settings", {});
-  if (r.error) { el.innerHTML = '<div class="card muted">' + esc(r.error) + '</div>'; return; }
-  let html = '<div class="card">' +
-    '<div class="name" style="margin-bottom:8px">Выходной день (дежурство не считается)</div>' +
-    '<div class="btns" style="justify-content:flex-start" id="dayOffBtns">';
-  DAY_NAMES.forEach((name, idx) => {
-    html += '<button data-day="' + idx + '" class="' + (idx === r.day_off ? 'primary' : '') + '">' + name + '</button>';
+  el.querySelectorAll("[data-unreg]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      showConfirm({
+        title: "Отвязать регистрацию",
+        message: "Этот человек потеряет привязку к своему имени и сможет заново нажать /register.",
+        confirmText: "Отвязать",
+        danger: true,
+      }).then(function (ok) {
+        if (!ok) return;
+        api("unregister", { telegramUserId: Number(b.dataset.unreg) }).then(loadData);
+      });
+    });
   });
-  html += '</div><div class="status" id="settingsStatus"></div></div>';
-  html += '<div class="card">' +
-    '<div class="name" style="margin-bottom:8px">Очередь дежурства</div>' +
-    '<div class="btns" style="justify-content:flex-start">' +
-      '<button class="danger" id="resetQueueBtn">Обнулить очередь (начать с начала списка)</button>' +
-    '</div>' +
-    '<div class="status" id="resetQueueStatus"></div>' +
-  '</div>';
-  html += '<div class="card">' +
-    '<div class="name" style="margin-bottom:8px">Регистрации</div>' +
-    '<div class="muted" style="margin-bottom:8px">Удаляет привязку ко всем именам сразу — все участники должны будут заново нажать /register. Это опасное действие, поэтому специально убрано из команд бота (чтобы никто не стёр всех случайным нажатием) и оставлено только здесь.</div>' +
-    '<div class="btns" style="justify-content:flex-start">' +
-      '<button class="danger" id="resetRegBtn">Сбросить все регистрации</button>' +
-    '</div>' +
-    '<div class="status" id="resetRegStatus"></div>' +
-  '</div>';
-  el.innerHTML = html;
-
-  el.querySelectorAll("[data-day]").forEach((b) => b.addEventListener("click", async () => {
-    const day = Number(b.dataset.day);
-    const statusEl = document.getElementById("settingsStatus");
-    statusEl.textContent = "Сохраняю...";
-    const res = await api("set_day_off", { day });
-    statusEl.textContent = res.ok ? "Сохранено." : "Ошибка: " + (res.error || "");
-    if (res.ok) loadSettings();
-  }));
-
-  document.getElementById("resetQueueBtn").addEventListener("click", async () => {
-    if (!confirm("Обнулить очередь? Дежурство снова начнётся с первого в списке.")) return;
-    const statusEl = document.getElementById("resetQueueStatus");
-    statusEl.textContent = "Обнуляю...";
-    const res = await api("reset_queue", {});
-    statusEl.textContent = res.ok ? "Готово. Очередь обнулена." : "Ошибка: " + (res.error || "");
-    if (res.ok) loadData();
-  });
-
-  document.getElementById("resetRegBtn").addEventListener("click", async () => {
-    const typed = prompt('Это удалит регистрации ВСЕХ участников. Чтобы подтвердить, введите слово СБРОС:');
-    if (typed !== "СБРОС") return;
-    const statusEl = document.getElementById("resetRegStatus");
-    statusEl.textContent = "Сбрасываю...";
-    const res = await api("reset_registrations", {});
-    statusEl.textContent = res.ok ? "Готово. Все регистрации сброшены." : "Ошибка: " + (res.error || "");
-    if (res.ok) loadData();
+  el.querySelectorAll("[data-dm]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      showPrompt({ title: "Личное сообщение", placeholder: "Текст сообщения", multiline: true, confirmText: "Отправить" }).then(function (text) {
+        if (!text || !text.trim()) return;
+        api("dm_student", { telegramUserId: Number(b.dataset.dm), text: text.trim() }).then(function (r) {
+          alert(r.ok ? "Отправлено." : "Ошибка: " + (r.error || "не удалось отправить"));
+        });
+      });
+    });
   });
 }
 
-document.getElementById("sendAnnounce").addEventListener("click", async () => {
-  const text = document.getElementById("announceText").value.trim();
-  const statusEl = document.getElementById("announceStatus");
+function loadSettings() {
+  var el = document.getElementById("tab-settings");
+  el.innerHTML = '<div class="spinner"></div>';
+  api("get_settings", {}).then(function (r) {
+    if (r.error) { el.innerHTML = '<div class="card"><div class="empty">' + esc(r.error) + '</div></div>'; return; }
+    var html = '<div class="card">' +
+      '<div class="card-title">Выходной день (дежурство не считается)</div>' +
+      '<div class="btns" style="justify-content:flex-start" id="dayOffBtns">';
+    DAY_NAMES.forEach(function (name, idx) {
+      html += '<button data-day="' + idx + '" class="' + (idx === r.day_off ? 'primary' : 'ghost') + '">' + name + '</button>';
+    });
+    html += '</div><div class="status" id="settingsStatus"></div></div>';
+    html += '<div class="card warn-card">' +
+      '<div class="card-title">Очередь дежурства</div>' +
+      '<div class="muted" style="margin-bottom:10px">Сбрасывает счётчик — дежурство снова начнётся с первого в списке.</div>' +
+      '<div class="btns" style="justify-content:flex-start">' +
+        '<button class="danger" id="resetQueueBtn">Обнулить очередь</button>' +
+      '</div>' +
+      '<div class="status" id="resetQueueStatus"></div>' +
+    '</div>';
+    html += '<div class="card danger-card">' +
+      '<div class="card-title">Регистрации</div>' +
+      '<div class="info-box">Удаляет привязку ко всем именам сразу — все участники должны будут заново нажать /register. Необратимо, поэтому специально убрано из команд бота и оставлено только здесь, с подтверждением словом.</div>' +
+      '<div class="btns" style="justify-content:flex-start">' +
+        '<button class="danger" id="resetRegBtn">Сбросить все регистрации</button>' +
+      '</div>' +
+      '<div class="status" id="resetRegStatus"></div>' +
+    '</div>';
+    el.innerHTML = html;
+
+    el.querySelectorAll("[data-day]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var day = Number(b.dataset.day);
+        var statusEl = document.getElementById("settingsStatus");
+        statusEl.className = "status";
+        statusEl.textContent = "Сохраняю...";
+        api("set_day_off", { day: day }).then(function (res) {
+          statusEl.className = "status " + (res.ok ? "ok" : "err");
+          statusEl.textContent = res.ok ? "Сохранено." : "Ошибка: " + (res.error || "");
+          if (res.ok) loadSettings();
+        });
+      });
+    });
+
+    document.getElementById("resetQueueBtn").addEventListener("click", function () {
+      showConfirm({
+        title: "Обнулить очередь",
+        message: "Дежурство снова начнётся с первого в списке. Отменить это действие нельзя.",
+        confirmText: "Обнулить",
+        danger: true,
+      }).then(function (ok) {
+        if (!ok) return;
+        var statusEl = document.getElementById("resetQueueStatus");
+        statusEl.className = "status";
+        statusEl.textContent = "Обнуляю...";
+        api("reset_queue", {}).then(function (res) {
+          statusEl.className = "status " + (res.ok ? "ok" : "err");
+          statusEl.textContent = res.ok ? "Готово. Очередь обнулена." : "Ошибка: " + (res.error || "");
+          if (res.ok) loadData();
+        });
+      });
+    });
+
+    document.getElementById("resetRegBtn").addEventListener("click", function () {
+      showConfirm({
+        title: "Сбросить все регистрации",
+        message: "Это удалит регистрации ВСЕХ участников без возможности отмены. Введите слово СБРОС, чтобы подтвердить.",
+        confirmText: "Сбросить всё",
+        danger: true,
+        requireWord: "СБРОС",
+      }).then(function (ok) {
+        if (!ok) return;
+        var statusEl = document.getElementById("resetRegStatus");
+        statusEl.className = "status";
+        statusEl.textContent = "Сбрасываю...";
+        api("reset_registrations", {}).then(function (res) {
+          statusEl.className = "status " + (res.ok ? "ok" : "err");
+          statusEl.textContent = res.ok ? "Готово. Все регистрации сброшены." : "Ошибка: " + (res.error || "");
+          if (res.ok) loadData();
+        });
+      });
+    });
+  });
+}
+
+document.getElementById("sendAnnounce").addEventListener("click", function () {
+  var text = document.getElementById("announceText").value.trim();
+  var statusEl = document.getElementById("announceStatus");
   if (!text) return;
+  statusEl.className = "status";
   statusEl.textContent = "Отправляю...";
-  const r = await api("announce", { text });
-  statusEl.textContent = r.ok ? "Отправлено." : "Ошибка: " + (r.error || "не удалось отправить");
-  if (r.ok) document.getElementById("announceText").value = "";
+  api("announce", { text: text }).then(function (r) {
+    statusEl.className = "status " + (r.ok ? "ok" : "err");
+    statusEl.textContent = r.ok ? "Отправлено." : "Ошибка: " + (r.error || "не удалось отправить");
+    if (r.ok) document.getElementById("announceText").value = "";
+  });
 });
 
-async function loadLog() {
-  const el = document.getElementById("tab-log");
-  const r = await api("get_log", {});
-  if (r.error) { el.innerHTML = '<div class="card muted">' + esc(r.error) + '</div>'; return; }
-  let html = '<div class="card">';
-  if (!r.items.length) html += '<div class="muted">Пока пусто.</div>';
-  r.items.forEach((it) => {
-    html += '<div class="log-item"><b>' + esc(it.kind) + '</b> — ' + esc(it.detail || "") + '<div class="muted">' + esc(new Date(it.created_at).toLocaleString("ru-RU")) + '</div></div>';
+function loadLog() {
+  var el = document.getElementById("tab-log");
+  el.innerHTML = '<div class="spinner"></div>';
+  api("get_log", {}).then(function (r) {
+    if (r.error) { el.innerHTML = '<div class="card"><div class="empty">' + esc(r.error) + '</div></div>'; return; }
+    var html = '<div class="card">';
+    if (!r.items.length) {
+      html += '<div class="empty">Пока пусто.</div>';
+    } else {
+      r.items.forEach(function (it) {
+        html += '<div class="log-item"><span class="log-kind">' + esc(it.kind) + '</span>' + esc(it.detail || "") + '<div class="muted">' + esc(new Date(it.created_at).toLocaleString("ru-RU")) + '</div></div>';
+      });
+    }
+    html += '</div>';
+    el.innerHTML = html;
   });
-  html += '</div>';
-  el.innerHTML = html;
 }
 
 if (!TOKEN) {
   document.getElementById("authError").innerHTML =
-    '<div class="error-banner">Нет токена доступа в ссылке. Откройте панель заново командой /panel в группе или в личке с ботом, затем добавьте в конец адреса ?token=ВАШ_ТОКЕН.</div>';
+    '<div class="card center-card">' +
+      '<div class="icon">🔒</div>' +
+      '<h2>Нужна свежая ссылка</h2>' +
+      '<p>Ссылка на панель либо устарела (действует 7 дней), либо открыта без токена доступа.</p>' +
+      '<p>Откройте панель заново: напишите боту команду <b>/panel</b> в группе или в личных сообщениях, и нажмите кнопку из его ответа.</p>' +
+    '</div>';
 } else {
+  document.getElementById("appRoot").hidden = false;
+  document.getElementById("tab-queue").innerHTML = '<div class="spinner"></div>';
   loadData();
 }
 </script>
