@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Панель дежурного бота</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f5f6f8;
+    color: #1a1a1a;
+    padding-bottom: env(safe-area-inset-bottom);
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    background: #2d6cdf;
+    color: #fff;
+    padding: calc(14px + env(safe-area-inset-top)) 18px 14px;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  header h1 { margin: 0; font-size: 17px; font-weight: 600; }
+  main { max-width: 720px; margin: 0 auto; padding: 14px 12px 32px; }
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .tab {
+    flex: 0 0 auto;
+    padding: 9px 14px;
+    border-radius: 20px;
+    background: #e4e7ec;
+    cursor: pointer;
+    font-size: 14px;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .tab.active { background: #2d6cdf; color: #fff; }
+  .card { background: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; gap: 10px; }
+  .row:last-child { border-bottom: none; }
+  .name { font-size: 14px; line-height: 1.35; }
+  .today { color: #2d6cdf; font-weight: 600; }
+  .muted { color: #888; font-size: 12px; }
+  button {
+    border: none;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    background: #e4e7ec;
+    min-height: 36px;
+    min-width: 36px;
+  }
+  button:active { background: #d7dbe2; }
+  button.primary { background: #2d6cdf; color: #fff; }
+  button.danger { background: #e04b4b; color: #fff; }
+  .btns { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+  textarea {
+    width: 100%;
+    min-height: 100px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    padding: 12px;
+    font-family: inherit;
+    font-size: 16px;
+    resize: vertical;
+  }
+  .log-item { font-size: 13px; padding: 8px 0; border-bottom: 1px solid #eee; }
+  .hidden { display: none; }
+  .status { font-size: 13px; margin-top: 8px; }
+  .error-banner {
+    background: #fdeaea;
+    color: #a12727;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+  [hidden] { display: none !important; }
+  @media (max-width: 420px) {
+    .row { flex-direction: column; align-items: stretch; }
+    .btns { justify-content: flex-start; }
+  }
+</style>
+</head>
+<body>
+<header><h1>Панель бота-дежурного</h1></header>
+<main>
+  <div id="authError"></div>
+  <div class="tabs">
+    <div class="tab active" data-tab="queue">Очередь</div>
+    <div class="tab" data-tab="regs">Регистрации</div>
+    <div class="tab" data-tab="announce">Объявление</div>
+    <div class="tab" data-tab="log">Журнал</div>
+  </div>
+
+  <div id="tab-queue" class="tab-content"></div>
+  <div id="tab-regs" class="tab-content hidden"></div>
+  <div id="tab-announce" class="tab-content hidden">
+    <div class="card">
+      <textarea id="announceText" placeholder="Текст объявления в группу..."></textarea>
+      <div class="btns" style="margin-top:8px">
+        <button class="primary" id="sendAnnounce">Отправить в группу</button>
+      </div>
+      <div class="status" id="announceStatus"></div>
+    </div>
+  </div>
+  <div id="tab-log" class="tab-content hidden"></div>
+</main>
+
+<script>
+const params = new URLSearchParams(location.search);
+const TOKEN = params.get("token") || params.get("panel") || "";
+const API_URL = "https://gbqllmzergnmpnceaynw.supabase.co/functions/v1/duty-bot?api=1";
+
+async function api(action, payload) {
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: TOKEN, action, payload }),
+  });
+  return res.json();
+}
+
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+document.querySelectorAll(".tab").forEach((el) => {
+  el.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach((t) => t.classList.add("hidden"));
+    el.classList.add("active");
+    document.getElementById("tab-" + el.dataset.tab).classList.remove("hidden");
+    if (el.dataset.tab === "queue" || el.dataset.tab === "regs") loadData();
+    if (el.dataset.tab === "log") loadLog();
+  });
+});
+
+let cache = null;
+
+async function loadData() {
+  const data = await api("get_data", {});
+  if (data.error) { alert(data.error); return; }
+  cache = data;
+  renderQueue();
+  renderRegs();
+}
+
+function regFor(studentId) {
+  return cache.registrations.find((r) => r.student_id === studentId);
+}
+
+function renderQueue() {
+  const el = document.getElementById("tab-queue");
+  let html = '<div class="card">';
+  cache.students.forEach((s, i) => {
+    const isToday = s.id === cache.todayId;
+    const reg = regFor(s.id);
+    html += '<div class="row">' +
+      '<div>' +
+        '<div class="name' + (isToday ? ' today' : '') + '">' + (i + 1) + '. ' + esc(s.full_name) + (isToday ? ' — сегодня' : '') + '</div>' +
+        '<div class="muted">' + (reg ? (reg.username ? '@' + esc(reg.username) : esc(reg.first_name || 'без ника')) : 'не зарегистрирован') + '</div>' +
+      '</div>' +
+      '<div class="btns">' +
+        '<button data-move="up" data-id="' + s.id + '">↑</button>' +
+        '<button data-move="down" data-id="' + s.id + '">↓</button>' +
+        '<button data-setduty="' + s.id + '">Назначить</button>' +
+        '<button data-rename="' + s.id + '">✎</button>' +
+      '</div>' +
+    '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+
+  el.querySelectorAll("[data-move]").forEach((b) => b.addEventListener("click", async () => {
+    await api("move", { id: Number(b.dataset.id), direction: b.dataset.move });
+    loadData();
+  }));
+  el.querySelectorAll("[data-setduty]").forEach((b) => b.addEventListener("click", async () => {
+    if (!confirm("Назначить этого человека дежурным сегодня?")) return;
+    await api("set_duty", { studentId: Number(b.dataset.setduty) });
+    loadData();
+  }));
+  el.querySelectorAll("[data-rename]").forEach((b) => b.addEventListener("click", async () => {
+    const student = cache.students.find((s) => s.id === Number(b.dataset.rename));
+    const name = prompt("Новое ФИО:", student.full_name);
+    if (!name) return;
+    await api("rename", { id: student.id, full_name: name });
+    loadData();
+  }));
+}
+
+function renderRegs() {
+  const el = document.getElementById("tab-regs");
+  const regs = cache.registrations;
+  let html = '<div class="card">';
+  if (!regs.length) html += '<div class="muted">Пока никто не зарегистрировался.</div>';
+  regs.forEach((r) => {
+    const student = cache.students.find((s) => s.id === r.student_id);
+    html += '<div class="row">' +
+      '<div>' +
+        '<div class="name">' + esc(student ? student.full_name : "?") + '</div>' +
+        '<div class="muted">' + (r.username ? '@' + esc(r.username) : esc(r.first_name || String(r.telegram_user_id))) + '</div>' +
+      '</div>' +
+      '<button class="danger" data-unreg="' + r.telegram_user_id + '">Отвязать</button>' +
+    '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+
+  el.querySelectorAll("[data-unreg]").forEach((b) => b.addEventListener("click", async () => {
+    if (!confirm("Отвязать регистрацию этого человека?")) return;
+    await api("unregister", { telegramUserId: Number(b.dataset.unreg) });
+    loadData();
+  }));
+}
+
+document.getElementById("sendAnnounce").addEventListener("click", async () => {
+  const text = document.getElementById("announceText").value.trim();
+  const statusEl = document.getElementById("announceStatus");
+  if (!text) return;
+  statusEl.textContent = "Отправляю...";
+  const r = await api("announce", { text });
+  statusEl.textContent = r.ok ? "Отправлено." : "Ошибка: " + (r.error || "не удалось отправить");
+  if (r.ok) document.getElementById("announceText").value = "";
+});
+
+async function loadLog() {
+  const el = document.getElementById("tab-log");
+  const r = await api("get_log", {});
+  if (r.error) { el.innerHTML = '<div class="card muted">' + esc(r.error) + '</div>'; return; }
+  let html = '<div class="card">';
+  if (!r.items.length) html += '<div class="muted">Пока пусто.</div>';
+  r.items.forEach((it) => {
+    html += '<div class="log-item"><b>' + esc(it.kind) + '</b> — ' + esc(it.detail || "") + '<div class="muted">' + esc(new Date(it.created_at).toLocaleString("ru-RU")) + '</div></div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+if (!TOKEN) {
+  document.getElementById("authError").innerHTML =
+    '<div class="error-banner">Нет токена доступа в ссылке. Откройте панель заново командой /panel в группе или в личке с ботом, затем добавьте в конец адреса ?token=ВАШ_ТОКЕН.</div>';
+} else {
+  loadData();
+}
+</script>
+</body>
+</html>
