@@ -297,6 +297,21 @@ async function loadSettings() {
     html += '<button data-day="' + idx + '" class="' + (idx === r.day_off ? 'primary' : '') + '">' + name + '</button>';
   });
   html += '</div><div class="status" id="settingsStatus"></div></div>';
+  html += '<div class="card">' +
+    '<div class="name" style="margin-bottom:8px">Очередь дежурства</div>' +
+    '<div class="btns" style="justify-content:flex-start">' +
+      '<button class="danger" id="resetQueueBtn">Обнулить очередь (начать с начала списка)</button>' +
+    '</div>' +
+    '<div class="status" id="resetQueueStatus"></div>' +
+  '</div>';
+  html += '<div class="card">' +
+    '<div class="name" style="margin-bottom:8px">Регистрации</div>' +
+    '<div class="muted" style="margin-bottom:8px">Удаляет привязку ко всем именам сразу — все участники должны будут заново нажать /register. Это опасное действие, поэтому специально убрано из команд бота (чтобы никто не стёр всех случайным нажатием) и оставлено только здесь.</div>' +
+    '<div class="btns" style="justify-content:flex-start">' +
+      '<button class="danger" id="resetRegBtn">Сбросить все регистрации</button>' +
+    '</div>' +
+    '<div class="status" id="resetRegStatus"></div>' +
+  '</div>';
   el.innerHTML = html;
 
   el.querySelectorAll("[data-day]").forEach((b) => b.addEventListener("click", async () => {
@@ -307,6 +322,25 @@ async function loadSettings() {
     statusEl.textContent = res.ok ? "Сохранено." : "Ошибка: " + (res.error || "");
     if (res.ok) loadSettings();
   }));
+
+  document.getElementById("resetQueueBtn").addEventListener("click", async () => {
+    if (!confirm("Обнулить очередь? Дежурство снова начнётся с первого в списке.")) return;
+    const statusEl = document.getElementById("resetQueueStatus");
+    statusEl.textContent = "Обнуляю...";
+    const res = await api("reset_queue", {});
+    statusEl.textContent = res.ok ? "Готово. Очередь обнулена." : "Ошибка: " + (res.error || "");
+    if (res.ok) loadData();
+  });
+
+  document.getElementById("resetRegBtn").addEventListener("click", async () => {
+    const typed = prompt('Это удалит регистрации ВСЕХ участников. Чтобы подтвердить, введите слово СБРОС:');
+    if (typed !== "СБРОС") return;
+    const statusEl = document.getElementById("resetRegStatus");
+    statusEl.textContent = "Сбрасываю...";
+    const res = await api("reset_registrations", {});
+    statusEl.textContent = res.ok ? "Готово. Все регистрации сброшены." : "Ошибка: " + (res.error || "");
+    if (res.ok) loadData();
+  });
 }
 
 document.getElementById("sendAnnounce").addEventListener("click", async () => {
